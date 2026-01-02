@@ -18,9 +18,28 @@ export const options = {
 
 const BASE_URL = 'http://localhost:8000';
 
+const endpoints = [
+  { path: '/', weight: 1 },
+  { path: '/datetime', weight: 3 },
+  { path: '/date', weight: 2 },
+  { path: '/time', weight: 2 },
+];
+
+function getRandomEndpoint() {
+  const totalWeight = endpoints.reduce((sum, ep) => sum + ep.weight, 0);
+  let random = Math.random() * totalWeight;
+  
+  for (const ep of endpoints) {
+    random -= ep.weight;
+    if (random <= 0) {
+      return ep.path;
+    }
+  }
+  return '/';
+}
+
 export default function () {
-  const endpoints = ['/datetime', '/date', '/time'];
-  const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)];
+  const endpoint = getRandomEndpoint();
   const response = http.get(`${BASE_URL}${endpoint}`);
   sleep(0.01);
 }
