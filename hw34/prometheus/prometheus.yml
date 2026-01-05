@@ -5,6 +5,10 @@ global:
 scrape_configs:
   - job_name: 'datetime-service'
     static_configs:
-      - targets: ['datetime-service:8000']
+      - targets: 
+        - 'datetime-service1:8000'
+        - 'datetime-service2:8000'
+        - 'datetime-service3:8000'
+        - 'datetime-service4:8000'
     scrape_interval: 5s
     metrics_path: '/metrics'

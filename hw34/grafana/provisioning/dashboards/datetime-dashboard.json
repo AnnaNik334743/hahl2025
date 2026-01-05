@@ -117,8 +117,9 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
+          "exemplar": false,
           "expr": "rate(http_requests_total[1m])",
-          "legendFormat": "{{method}} {{endpoint}} {{status_code}}",
+          "legendFormat": "{{instance}} {{method}} {{endpoint}} {{status_code}}",
           "range": true,
           "refId": "A"
         }
@@ -217,7 +218,7 @@
           },
           "editorMode": "code",
           "expr": "rate(http_request_duration_seconds_sum[1m]) / rate(http_request_duration_seconds_count[1m])",
-          "legendFormat": "{{method}} {{endpoint}}",
+          "legendFormat": "{{instance}} {{method}} {{endpoint}}",
           "range": true,
           "refId": "A"
         }
@@ -316,7 +317,7 @@
           },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[1m]))",
-          "legendFormat": "{{method}} {{endpoint}}",
+          "legendFormat": "{{instance}} {{method}} {{endpoint}}",
           "range": true,
           "refId": "A"
         }
@@ -416,7 +417,7 @@
           "editorMode": "code",
           "expr": "process_resident_memory_bytes{job=\"datetime-service\"}",
           "instant": false,
-          "legendFormat": "{{job}}",
+          "legendFormat": "{{instance}} ",
           "range": true,
           "refId": "A"
         }
@@ -516,7 +517,7 @@
           "editorMode": "code",
           "expr": "irate(process_cpu_seconds_total{job=\"datetime-service\"}[1m])*100",
           "instant": false,
-          "legendFormat": "{{job}}",
+          "legendFormat": "{{instance}} ",
           "range": true,
           "refId": "A"
         }
@@ -540,5 +541,5 @@
   "timezone": "",
   "title": "DateTime Service Dashboard",
   "uid": "93d0a12b-74aa-4bcb-b850-93d1e2841e43",
-  "version": 4
+  "version": 5
 }
