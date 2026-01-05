@@ -17,37 +17,93 @@ services:
     networks:
       - monitoring-network
 
-  datetime-service:
-    build: ./service
-    container_name: datetime-service
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 2
+  # datetime-service:
+  #   build: ./service
+  #   container_name: datetime-service
+  #   command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 2
 
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         # cpus: '0.1'
+  #         # memory: 64M
+
+  #         # cpus: '0.1'
+  #         # memory: 256M
+
+  #         # cpus: '0.5'
+  #         # memory: 64M
+
+  #         # cpus: '0.5'
+  #         # memory: 256M
+
+  #         # cpus: '1.0'
+  #         # memory: 64M
+
+  #         # cpus: '1.0'
+  #         # memory: 256M
+
+  #         cpus: '2.0'
+  #         memory: 256M
+
+  #   # ports:
+  #   #   - "8000:8000"
+  #   expose:
+  #     - "8000"
+  #   networks:
+  #     - monitoring-network
+  #   restart: unless-stopped
+
+  datetime-service1:
+    build: ./service
+    container_name: datetime-service1
     deploy:
       resources:
         limits:
-          # cpus: '0.1'
-          # memory: 64M
+          cpus: '0.5'
+          memory: 64M
+    expose:
+      - "8000"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
 
-          # cpus: '0.1'
-          # memory: 256M
+  datetime-service2:
+    build: ./service
+    container_name: datetime-service2
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 64M
+    expose:
+      - "8000"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
 
-          # cpus: '0.5'
-          # memory: 64M
+  datetime-service3:
+    build: ./service
+    container_name: datetime-service3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 64M
+    expose:
+      - "8000"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
 
-          # cpus: '0.5'
-          # memory: 256M
-
-          # cpus: '1.0'
-          # memory: 64M
-
-          # cpus: '1.0'
-          # memory: 256M
-
-          cpus: '2.0'
-          memory: 256M
-
-    # ports:
-    #   - "8000:8000"
+  datetime-service4:
+    build: ./service
+    container_name: datetime-service4
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 64M
     expose:
       - "8000"
     networks:
@@ -73,7 +129,8 @@ services:
       - monitoring-network
     restart: unless-stopped
     depends_on:
-      - datetime-service
+      - datetime-service1
+      - datetime-service2
 
   grafana:
     image: grafana/grafana:latest
