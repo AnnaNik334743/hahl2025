@@ -20,17 +20,75 @@ services:
   datetime-service:
     build: ./service
     container_name: datetime-service
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 2
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 256M
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/holidays_db
+      - REDIS_URL=redis://redis:6379/0
     expose:
       - "8000"
     networks:
       - monitoring-network
     restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=holidays_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./service/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://postgres:postgres@postgres:5432/holidays_db?sslmode=disable
+    ports:
+      - "9187:9187"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "8081:8080"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    privileged: true
 
   prometheus:
     image: prom/prometheus:latest
@@ -52,6 +110,8 @@ services:
     restart: unless-stopped
     depends_on:
       - datetime-service
+      - postgres-exporter
+      - cadvisor
 
   grafana:
     image: grafana/grafana:latest
@@ -75,6 +135,10 @@ volumes:
   prometheus-data:
     driver: local
   grafana-data:
+    driver: local
+  postgres-data:
+    driver: local
+  redis-data:
     driver: local
 
 networks:

@@ -6,7 +6,7 @@ export const options = {
       executor: 'constant-arrival-rate',
       rate: 800,
       timeUnit: '1s',
-      duration: '3m',
+      duration: '5m',
       preAllocatedVUs: 200,
       maxVUs: 500,
     }
@@ -31,6 +31,6 @@ export default function () {
   const randomMonth = getRandomMonth();
   const randomDay = getRandomDay();
   const randomHour = getRandomHour();
-  const endpoint = `/holidays/${randomMonth}/${randomDay}/${randomHour}`;
+  const endpoint = `/holidays/${randomMonth}/${randomDay}/${randomHour}/cached`;
   const response = http.get(`${BASE_URL}${endpoint}`);
 }

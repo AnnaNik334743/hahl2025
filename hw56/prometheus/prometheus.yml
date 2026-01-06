@@ -5,7 +5,19 @@ global:
 scrape_configs:
   - job_name: 'datetime-service'
     static_configs:
-      - targets: 
-        - 'datetime-service'
-    scrape_interval: 5s
+      - targets: ['datetime-service:8000']
+        labels:
+          service: 'datetime-service'
     metrics_path: '/metrics'
+
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          service: 'postgres-exporter'
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'cadvisor'
