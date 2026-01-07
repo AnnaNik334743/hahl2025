@@ -2,13 +2,13 @@ import http from 'k6/http';
 
 export const options = {
   scenarios: {
-    constant_800: {
+    constant_500: {
       executor: 'constant-arrival-rate',
-      rate: 800,
+      rate: 500,
       timeUnit: '1s',
       duration: '5m',
       preAllocatedVUs: 200,
-      maxVUs: 500,
+      maxVUs: 300,
     }
   }
 };
@@ -23,14 +23,9 @@ function getRandomDay() {
   return Math.floor(Math.random() * 31) + 1;
 }
 
-function getRandomHour() {
-  return Math.floor(Math.random() * 24) + 1;
-}
-
 export default function () {
   const randomMonth = getRandomMonth();
   const randomDay = getRandomDay();
-  const randomHour = getRandomHour();
-  const endpoint = `/holidays/${randomMonth}/${randomDay}/${randomHour}/cached`;
+  const endpoint = `/holidays/${randomMonth}/${randomDay}/cached`;
   const response = http.get(`${BASE_URL}${endpoint}`);
 }

@@ -65,11 +65,7 @@ async def startup():
     db_pool = await asyncpg.create_pool(
         dsn=os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/holidays_db"),
         min_size=10,
-        max_size=200,
-        max_inactive_connection_lifetime=60,
-        timeout=60,
-        max_queries=50000,
-        max_cached_statement_lifetime=0,
+        max_size=200
     )
 
     redis_client = redis.Redis.from_url(
@@ -124,8 +120,8 @@ def root():
             "/date": "Current date information",
             "/time": "Current time information",
             "/datetime": "Complete datetime info",
-            "/holidays/{month}/{day}/{hour}": "Get holidays for specific day with monthly summary (no cache)",
-            "/holidays/{month}/{day}/{hour}/cached": "Get holidays for specific day with monthly summary (with cache)",
+            "/holidays/{month}/{day}": "Get holidays for specific day with monthly summary (no cache)",
+            "/holidays/{month}/{day}/cached": "Get holidays for specific day with monthly summary (with cache)",
             "/metrics": "Prometheus metrics (for monitoring)"
         }
     }
@@ -264,14 +260,14 @@ async def fetch_day_holidays_with_month_summary(month: int, day: int, query_type
     }
 
 
-@app.get("/holidays/{month}/{day}/{hour}")
-async def get_holidays(month: int, day: int, hour: int):
+@app.get("/holidays/{month}/{day}")
+async def get_holidays(month: int, day: int):
     return await fetch_day_holidays_with_month_summary(month, day, query_type="holidays_by_day_month")
 
 
-@app.get("/holidays/{month}/{day}/{hour}/cached")
-async def get_holidays_cached(month: int, day: int, hour: int):
-    cache_key = f"holidays:{month}:{day}:{hour}"
+@app.get("/holidays/{month}/{day}/cached")
+async def get_holidays_cached(month: int, day: int):
+    cache_key = f"holidays:{month}:{day}"
     
     if redis_client:
         cached_data = await redis_client.get(cache_key)
@@ -284,7 +280,7 @@ async def get_holidays_cached(month: int, day: int, hour: int):
     response_data = await fetch_day_holidays_with_month_summary(month, day, query_type="holidays_by_day_month_cached")
     
     if redis_client:
-        await redis_client.setex(cache_key, 3600, json.dumps(response_data))
+        await redis_client.setex(cache_key, 30, json.dumps(response_data))
     
     return response_data
 

@@ -8,6 +8,7 @@ scrape_configs:
       - targets: ['datetime-service:8000']
         labels:
           service: 'datetime-service'
+    scrape_interval: 5s
     metrics_path: '/metrics'
 
   - job_name: 'postgres-exporter'

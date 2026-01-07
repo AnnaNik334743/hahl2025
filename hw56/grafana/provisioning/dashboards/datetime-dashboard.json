@@ -90,7 +90,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 12,
         "w": 12,
         "x": 0,
         "y": 0
@@ -202,7 +202,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 12,
         "w": 12,
         "x": 12,
         "y": 0
@@ -310,10 +310,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 12,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 12
       },
       "id": 3,
       "options": {
@@ -434,10 +434,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 12,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 12
       },
       "id": 8,
       "options": {
@@ -461,7 +461,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "rate(cache_misses_total[1m]) / rate(cache_hits_total[1m]) * 100",
+          "expr": "rate(cache_misses_total[1m]) / (rate(cache_hits_total[1m]) + rate(cache_misses_total[1m])) * 100",
           "hide": false,
           "instant": false,
           "legendFormat": "holidays-cached",
@@ -488,5 +488,5 @@
   "timezone": "",
   "title": "DateTime Service Dashboard",
   "uid": "93d0a12b-74aa-4bcb-b850-93d1e2841e43",
-  "version": 7
+  "version": 8
 }
