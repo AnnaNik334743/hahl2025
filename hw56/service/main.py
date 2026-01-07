@@ -266,25 +266,11 @@ async def fetch_day_holidays_with_month_summary(month: int, day: int, query_type
 
 @app.get("/holidays/{month}/{day}/{hour}")
 async def get_holidays(month: int, day: int, hour: int):
-    if month < 1 or month > 12:
-        raise HTTPException(status_code=400, detail="Month must be between 1 and 12")
-    if day < 1 or day > 31:
-        raise HTTPException(status_code=400, detail="Day must be between 1 and 31")
-    if hour < 1 or hour > 24:
-        raise HTTPException(status_code=400, detail="Hour must be between 1 and 24")
-    
     return await fetch_day_holidays_with_month_summary(month, day, query_type="holidays_by_day_month")
 
 
 @app.get("/holidays/{month}/{day}/{hour}/cached")
 async def get_holidays_cached(month: int, day: int, hour: int):
-    if month < 1 or month > 12:
-        raise HTTPException(status_code=400, detail="Month must be between 1 and 12")
-    if day < 1 or day > 31:
-        raise HTTPException(status_code=400, detail="Day must be between 1 and 31")
-    if hour < 1 or hour > 24:
-        raise HTTPException(status_code=400, detail="Hour must be between 1 and 24")
-    
     cache_key = f"holidays:{month}:{day}:{hour}"
     
     if redis_client:
