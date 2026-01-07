@@ -2,13 +2,13 @@ import http from 'k6/http';
 
 export const options = {
   scenarios: {
-    constant_500: {
+    constant_1600: {
       executor: 'constant-arrival-rate',
-      rate: 500,
+      rate: 1000,
       timeUnit: '1s',
-      duration: '5m',
-      preAllocatedVUs: 200,
-      maxVUs: 300,
+      duration: '3m',
+      preAllocatedVUs: 500,
+      maxVUs: 800,
     }
   }
 };

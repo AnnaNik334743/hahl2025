@@ -9,6 +9,8 @@ from typing import List, Optional, Dict, Any
 import json
 import os
 import re
+import random
+import asyncio
 
 
 REQUEST_COUNT = Counter(
@@ -265,24 +267,63 @@ async def get_holidays(month: int, day: int):
     return await fetch_day_holidays_with_month_summary(month, day)
 
 
+# @app.get("/holidays/{month}/{day}/cached")
+# async def get_holidays_cached(month: int, day: int):
+#     cache_key = f"holidays:{month}:{day}"
+    
+#     if redis_client:
+#         cached_data = await redis_client.get(cache_key)
+#         if cached_data:
+#             CACHE_HITS.labels(cache_type="holidays").inc()
+#             return json.loads(cached_data)
+    
+#     CACHE_MISSES.labels(cache_type="holidays").inc()
+    
+#     response_data = await fetch_day_holidays_with_month_summary(month, day)
+    
+#     if redis_client:
+#         await redis_client.setex(cache_key, 3600, json.dumps(response_data))
+    
+#     return response_data
+
+
+_cache_locks: Dict[str, asyncio.Lock] = {}
+_cache_lock_lock = asyncio.Lock()
+
+
+async def get_cache_lock(key: str) -> asyncio.Lock:
+    async with _cache_lock_lock:
+        if key not in _cache_locks:
+            _cache_locks[key] = asyncio.Lock()
+        return _cache_locks[key]
+
+
 @app.get("/holidays/{month}/{day}/cached")
 async def get_holidays_cached(month: int, day: int):
     cache_key = f"holidays:{month}:{day}"
     
-    if redis_client:
+    if not redis_client:
+        return await fetch_day_holidays_with_month_summary(month, day)
+    
+    cached_data = await redis_client.get(cache_key)
+    if cached_data:
+        CACHE_HITS.labels(cache_type="holidays").inc()
+        return json.loads(cached_data)
+    
+    CACHE_MISSES.labels(cache_type="holidays").inc()
+    
+    lock = await get_cache_lock(cache_key)
+    
+    async with lock:
         cached_data = await redis_client.get(cache_key)
         if cached_data:
             CACHE_HITS.labels(cache_type="holidays").inc()
             return json.loads(cached_data)
-    
-    CACHE_MISSES.labels(cache_type="holidays").inc()
-    
-    response_data = await fetch_day_holidays_with_month_summary(month, day)
-    
-    if redis_client:
-        await redis_client.setex(cache_key, 30, json.dumps(response_data))
-    
-    return response_data
+        
+        ttl = 30 + random.randint(-5, 5)
+        response_data = await fetch_day_holidays_with_month_summary(month, day)
+        await redis_client.setex(cache_key, ttl, json.dumps(response_data))
+        return response_data
 
 
 @app.get("/metrics")
