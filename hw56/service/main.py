@@ -65,7 +65,7 @@ async def startup():
     db_pool = await asyncpg.create_pool(
         dsn=os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/holidays_db"),
         min_size=10,
-        max_size=200
+        max_size=300
     )
 
     redis_client = redis.Redis.from_url(
@@ -107,7 +107,7 @@ async def metrics_middleware(request: Request, call_next):
         LAST_REQUEST_TIMESTAMP.labels(method=method, endpoint=normalized_endpoint).set(time.time())
         if response.status_code == 200:
             SUCCESS_REQUEST_COUNT.labels(method=method, endpoint=normalized_endpoint, status_code=response.status_code).inc()
-
+    
     return response
 
 
@@ -191,7 +191,7 @@ async def get_db_connection():
     return db_pool
 
 
-async def fetch_day_holidays_with_month_summary(month: int, day: int, query_type: str) -> Dict[str, Any]:
+async def fetch_day_holidays_with_month_summary(month: int, day: int) -> Dict[str, Any]:
     async with (await get_db_connection()).acquire() as connection:
         result = await connection.fetchrow("""
             WITH monthly_summary AS (
@@ -262,7 +262,7 @@ async def fetch_day_holidays_with_month_summary(month: int, day: int, query_type
 
 @app.get("/holidays/{month}/{day}")
 async def get_holidays(month: int, day: int):
-    return await fetch_day_holidays_with_month_summary(month, day, query_type="holidays_by_day_month")
+    return await fetch_day_holidays_with_month_summary(month, day)
 
 
 @app.get("/holidays/{month}/{day}/cached")
@@ -277,7 +277,7 @@ async def get_holidays_cached(month: int, day: int):
     
     CACHE_MISSES.labels(cache_type="holidays").inc()
     
-    response_data = await fetch_day_holidays_with_month_summary(month, day, query_type="holidays_by_day_month_cached")
+    response_data = await fetch_day_holidays_with_month_summary(month, day)
     
     if redis_client:
         await redis_client.setex(cache_key, 30, json.dumps(response_data))
