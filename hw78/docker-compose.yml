@@ -81,8 +81,6 @@ services:
       DATA_SOURCE_USER: "appuser"
       DATA_SOURCE_PASS: "apppassword"
       PG_EXPORTER_EXTEND_QUERY_PATH: "/etc/postgres_exporter/queries.yaml"
-    volumes:
-      - ./postgres_exporter/queries.yaml:/etc/postgres_exporter/queries.yaml:ro
     ports:
       - "9187:9187"
     restart: unless-stopped
@@ -98,8 +96,6 @@ services:
       DATA_SOURCE_USER: "appuser"
       DATA_SOURCE_PASS: "apppassword"
       PG_EXPORTER_EXTEND_QUERY_PATH: "/etc/postgres_exporter/queries.yaml"
-    volumes:
-      - ./postgres_exporter/queries.yaml:/etc/postgres_exporter/queries.yaml:ro
     ports:
       - "9188:9187"
     restart: unless-stopped

@@ -133,7 +133,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
           },
           "custom": {
             "axisBorderShow": false,
@@ -166,28 +166,11 @@
               "mode": "none"
             },
             "thresholdsStyle": {
-              "mode": "line"
+              "mode": "off"
             }
           },
           "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "orange",
-                "value": 104857600
-              },
-              {
-                "color": "red",
-                "value": 524288000
-              }
-            ]
-          },
-          "unit": "bytes"
+          "unit": "none"
         },
         "overrides": []
       },
@@ -219,28 +202,15 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "editorMode": "code",
-          "expr": "pg_replication_lag_seconds",
+          "expr": "pg_replication_last_replay_seconds",
           "hide": false,
           "instant": false,
-          "legendFormat": "__auto",
+          "legendFormat": "{{job}}",
           "range": true,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "editorMode": "code",
-          "expr": "pg_replication_lag_bytes",
-          "hide": false,
-          "instant": false,
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "B"
         }
       ],
-      "title": "Replication Lag",
+      "title": "Replication Lag (sec)",
       "type": "timeseries"
     },
     {
@@ -302,33 +272,7 @@
             ]
           }
         },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "pg_exporter_master:9187",
-                  "pg_exporter_replica:9187"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": true,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 11,
@@ -358,13 +302,13 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "rate(process_cpu_seconds_total[1m])",
+          "expr": "sum by (name) (\n  rate(container_cpu_usage_seconds_total{name=~\"app|postgres-master|postgres-replica\"}[1m])\n)",
           "legendFormat": "{{instance}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "PostgreSQL CPU Consumption",
+      "title": "CPU Consumption",
       "type": "timeseries"
     }
   ],
@@ -376,7 +320,7 @@
     "list": []
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
