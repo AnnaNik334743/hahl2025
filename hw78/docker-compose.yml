@@ -13,9 +13,15 @@ services:
   app:
     build: ./fastapi-app
     container_name: app
+    expose:
+      - "8000"
     environment:
-      - DATABASE_URL=postgresql://appuser:apppassword@pgpool:5432/appdb?target_session_attrs=read-write
+      - MASTER_URL=postgresql://appuser:apppassword@postgres-master/appdb
+      - REPLICA_URL=postgresql://appuser:apppassword@postgres-replica/appdb
     restart: unless-stopped
+    depends_on:
+      - postgres-1
+      - postgres-2
 
   postgres-1:
     image: docker.io/bitnamilegacy/postgresql-repmgr:17.6.0
@@ -39,6 +45,7 @@ services:
       - REPMGR_NODE_ID=1
     volumes:
       - postgres_master_data:/bitnami/postgresql
+      - ./postgres/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: unless-stopped
 
   postgres-2:
@@ -50,10 +57,10 @@ services:
       - POSTGRESQL_PASSWORD=apppassword
       - POSTGRESQL_DATABASE=appdb
       - REPMGR_PASSWORD=repmgrpassword
-      - REPMGR_PRIMARY_HOST=postgres-2
+      - REPMGR_PRIMARY_HOST=postgres-1
       - REPMGR_PRIMARY_PORT=5432
       - REPMGR_PARTNER_NODES=postgres-1:5432,postgres-2:5432
-      - REPMGR_NODE_NAME=postgres-1
+      - REPMGR_NODE_NAME=postgres-2
       - REPMGR_NODE_NETWORK_NAME=postgres-2
       - REPMGR_PORT_NUMBER=5432
       - REPMGR_CONNECT_TIMEOUT=1
@@ -140,7 +147,6 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning/:/etc/grafana/provisioning/
-      - ./grafana/dashboards/:/etc/grafana/dashboards/
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin

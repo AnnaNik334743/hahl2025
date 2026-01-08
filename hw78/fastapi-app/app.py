@@ -1,99 +1,118 @@
 from fastapi import FastAPI
-from sqlalchemy import create_engine, text, Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+import psycopg2
 import random
 import time
 import os
+from contextlib import contextmanager
 
 app = FastAPI()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:apppassword@pgpool:5432/appdb")
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine)
-
-Base = declarative_base()
+MASTER_URL = os.getenv("MASTER_URL", "postgresql://appuser:apppassword@postgres-master/appdb")
+REPLICA_URL = os.getenv("REPLICA_URL", "postgresql://appuser:apppassword@postgres-replica/appdb")
 
 
-class Item(Base):
-    __tablename__ = "items"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
-    value = Column(Integer)
-    created_at = Column(Integer, default=lambda: int(time.time()))
+def get_master_conn():
+    return psycopg2.connect(MASTER_URL)
 
 
-@app.on_event("startup")
-def startup():
+def get_replica_conn():
+    return psycopg2.connect(REPLICA_URL)
+
+
+@contextmanager
+def get_connection(use_master=True):
+    conn = None
     try:
-        Base.metadata.create_all(bind=engine)
-        
-        db = SessionLocal()
-        count = db.execute(text("SELECT COUNT(*) FROM items")).scalar()
-        if count == 0:
-            for i in range(100):
-                item = Item(
-                    name=f"initial_item_{i}",
-                    value=random.randint(1, 1000)
-                )
-                db.add(item)
-            db.commit()
-            print(f"Added {100} initial items")
-        db.close()
-    except Exception as e:
-        print(f"Startup error: {e}")
-
-
-@app.post("/write")
-def write_item():
-    db = SessionLocal()
-    
-    try:
-        is_replica = db.execute(text("SELECT pg_is_in_recovery()")).scalar()
-
-        item = Item(
-            name=f"item_{int(time.time())}_{random.randint(1000, 9999)}",
-            value=random.randint(1, 1000)
-        )
-        
-        db.add(item)
-        db.commit()
-        db.refresh(item)
-        
-        return {
-            "status": "success",
-            "id": item.id,
-            "name": item.name,
-            "value": item.value,
-            "written_to": "replica" if is_replica else "master",
-            "timestamp": time.time()
-        }
-    except Exception as e:
-        db.rollback()
-        return {"status": "error", "message": str(e)}
+        if use_master:
+            conn = get_master_conn()
+        else:
+            conn = get_replica_conn()
+        yield conn
+        conn.commit()
+    except Exception:
+        if conn:
+            conn.rollback()
+        raise
     finally:
-        db.close()
+        if conn:
+            conn.close()
 
 
 @app.get("/read")
-def read_item():
-    db = SessionLocal()
+def read(percent: int = 20, id: int = None):
+    use_replica = random.randint(1, 100) <= percent
     
     try:
-        is_replica = db.execute(text("SELECT pg_is_in_recovery()")).scalar()
-        result = db.execute(text("SELECT * FROM items ORDER BY RANDOM() LIMIT 1"))
-        row = result.fetchone()
+        if use_replica:
+            with get_connection(use_master=False) as conn:
+                cur = conn.cursor()
+                if id:
+                    cur.execute("SELECT id, name FROM items WHERE id = %s", (id,))
+                else:
+                    cur.execute("SELECT id, name FROM items ORDER BY RANDOM() LIMIT 1")
+                
+                result = cur.fetchone()
+                cur.close()
+                
+                if result:
+                    return {
+                        "id": result[0],
+                        "name": result[1],
+                        "read_from": "replica",
+                        "percent": percent
+                    }
+                return {"error": "No item found", "read_from": "replica"}
         
-        if row:
-            return {
-                "status": "success",
-                "id": row[0],
-                "name": row[1],
-                "value": row[2],
-                "read_from": "replica" if is_replica else "master"
-            }
-        return {"status": "empty", "message": "No items found"}
+        else:
+            with get_connection(use_master=True) as conn:
+                cur = conn.cursor()
+                if id:
+                    cur.execute("SELECT id, name FROM items WHERE id = %s", (id,))
+                else:
+                    cur.execute("SELECT id, name FROM items ORDER BY RANDOM() LIMIT 1")
+                
+                result = cur.fetchone()
+                cur.close()
+                
+                if result:
+                    return {
+                        "id": result[0],
+                        "name": result[1],
+                        "read_from": "master",
+                        "percent": percent
+                    }
+                else:
+                    return {"error": "No item found", "read_from": "master"}
+        
     except Exception as e:
-        return {"status": "error", "message": str(e)}
-    finally:
-        db.close()
+        return {
+            "error": str(e), 
+            "read_from": "replica" if use_replica else "master",
+            "percent": percent
+        }
+
+
+@app.post("/write")
+def write(data: str = None):
+    try:
+        with get_connection(use_master=True) as conn:
+            cur = conn.cursor()
+            
+            item_name = data if data else f"item_{int(time.time())}_{random.randint(1000, 9999)}"
+            
+            cur.execute(
+                "INSERT INTO items (name) VALUES (%s) RETURNING id",
+                (item_name,)
+            )
+            item_id = cur.fetchone()[0]
+            
+            cur.close()
+            
+            return {
+                "id": item_id,
+                "name": item_name,
+                "written_to": "master"
+            }
+        
+    except Exception as e:
+        return {"error": str(e)}
