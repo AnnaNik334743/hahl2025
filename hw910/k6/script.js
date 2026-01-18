@@ -1,28 +1,38 @@
-import http from 'k6/http';
-import { check, sleep } from 'k6';
+import http from "k6/http";
+
+const TOTAL_RPS = 40;
+
+function rate(percentage) {
+  return TOTAL_RPS * percentage;
+}
 
 export const options = {
-  stages: [
-    { duration: '30s', target: 20 },
-    { duration: '1m', target: 50 },
-    { duration: '2m', target: 100 },
-    { duration: '30s', target: 0 },
-  ],
-  thresholds: {
-    http_req_duration: ['p(95)<500'],
+  scenarios: {
+    async_endpoint: {
+      exec: "async",
+      executor: "constant-arrival-rate",
+      duration: "10m",
+      rate: rate(0.65),
+      timeUnit: "1s",
+      preAllocatedVUs: 50,
+      maxVUs: 100,
+    },
+    sync_endpoint: {
+      exec: "sync",
+      executor: "constant-arrival-rate",
+      duration: "10m",
+      rate: rate(0.35),
+      timeUnit: "1s",
+      preAllocatedVUs: 50,
+      maxVUs: 100,
+    },
   },
 };
 
-export default function () {
-  const syncRes = http.post('http://localhost/producer/sync');
-  check(syncRes, {
-    'Sync status is done': (r) => r.json().status === 'done',
-  });
+export function async() {
+  http.get("http://localhost:8081/app/async");
+}
 
-  const asyncRes = http.post('http://localhost/producer/async');
-  check(asyncRes, {
-    'Async status is message sent': (r) => r.json().status === 'message sent',
-  });
-
-  sleep(1);
+export function sync() {
+  http.get("http://localhost:8081/app/sync");
 }

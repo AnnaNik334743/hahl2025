@@ -1,5 +1,5 @@
 global:
-  scrape_interval: 15s
+  scrape_interval: 10s
 
 scrape_configs:
   - job_name: 'prometheus'
@@ -8,12 +8,12 @@ scrape_configs:
   - job_name: 'kafka'
     static_configs:
       - targets: ['kafka-exporter:9308']
-  - job_name: 'producer'
+  - job_name: 'app'
     static_configs:
-      - targets: ['producer:8001']
-  - job_name: 'consumer'
-    static_configs:
-      - targets: ['consumer:8002']
+      - targets: 
+          - 'app1:8000'
+          - 'app2:8000'
+          - 'app3:8000'
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
